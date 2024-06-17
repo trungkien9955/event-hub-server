@@ -27,7 +27,28 @@ const register = asyncHandler(async(req, res)=> {
     newUser.save()
     res.status(200).json({
         message: 'User created successfully.',
-        data: {...newUser, accessToken: getJsonWebToken(email, newUser._id)}
+        data: {fullname: newUser.fullname, email: newUser.email, _id: newUser._id, accessToken: getJsonWebToken(email, newUser._id)}
     })
 })
-module.exports = {register}
+const login = asyncHandler(async(req, res)=>{
+    const {email, password}= req.body
+    const existingUser = await UserModel.findOne({email})
+    if(!existingUser){
+        res.status(403)
+        throw new Error('User not found')
+    }
+    const passwordMatch = await bcrypt.compare(password, existingUser.password)
+    if(!passwordMatch){
+        res.status(401)
+        throw new Error('Incorrect email or password')
+    }
+    res.status(200).json({
+        message: "Logged in successfully",
+        data: {
+            id: existingUser._id,
+            email: existingUser.email,
+            accessToken: await getJsonWebToken(email, existingUser._id)
+        }
+    })
+})
+module.exports = {register, login}
